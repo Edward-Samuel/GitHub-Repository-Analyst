@@ -280,7 +280,7 @@ def demo_repo_parsing():
     print("=" * 60)
 
     test_cases = [
-        "vercel/next.js",
+        "fastapi/fastapi",
         "facebook/react",
         "microsoft/vscode",
         "torvalds/linux",

@@ -24,6 +24,6 @@ Setup:
 Usage Examples:
     python main.py analyze microsoft/vscode
     python main.py analyze facebook/react --depth deep --insights --security
-    python main.py compare vercel/next.js nearform/next.js
+    python main.py compare fastapi/fastapi flask-restful/flask-restful
     python main.py batch repos.txt
 """

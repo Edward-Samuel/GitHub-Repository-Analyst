@@ -93,7 +93,7 @@ def main():
            streamlit run app.py
            ```
         2. Optionally set **GITHUB_TOKEN** for higher rate limits
-        3. Enter a repository in `owner/repo` format (e.g., `vercel/next.js`)
+        3. Enter a repository in `owner/repo` format (e.g., `fastapi/fastapi`)
         4. Choose analysis depth and click **Analyze**
         5. View the comprehensive report with code intelligence and AI insights
         """)
@@ -102,7 +102,7 @@ def main():
     with col1:
         repo_input = st.text_input(
             "Repository (owner/repo)",
-            placeholder="e.g., vercel/next.js",
+            placeholder="e.g., fastapi/fastapi",
         )
     with col2:
         analyze_clicked = st.button("🔍 Analyze Repository", use_container_width=True)
@@ -461,11 +461,11 @@ def main():
 
     else:
         st.markdown("---")
-        st.info("Enter a repository name (e.g., `vercel/next.js`) and click **Analyze Repository** to begin.")
+        st.info("Enter a repository name (e.g., `fastapi/fastapi`) and click **Analyze Repository** to begin.")
 
         with st.expander("Show example repositories", expanded=True):
             examples = [
-                ("vercel/next.js", "React Framework"),
+                ("fastapi/fastapi", "API Framework"),
                 ("facebook/react", "UI Library"),
                 ("microsoft/vscode", "Code Editor"),
                 ("torvalds/linux", "Operating System Kernel"),

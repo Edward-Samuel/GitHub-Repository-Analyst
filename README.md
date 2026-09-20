@@ -96,7 +96,7 @@ python -m uvicorn api:app --reload      # Mac/Linux
 Open http://localhost:8000, enter an `owner/repo`, and ask questions grounded in the
 repository's README, manifests, tree, and fetched source files.
 
-#### Render + Vercel
+#### Render Deployment
 
 Deploy the FastAPI backend on Render using the included `render.yaml` Blueprint:
 
@@ -115,9 +115,8 @@ PRIMARY_MODEL=gemma-4-26b-a4b-it
 FALLBACK_MODEL=gemma-4-31b-it
 ```
 
-Deploy the `web` directory to Vercel as a static frontend. Update the frontend API
-base URL to the deployed Render URL, or configure a Vercel rewrite/proxy so
-`/api/chat/stream`, `/api/chat`, and `/api/repository` forward to Render.
+The complete application is served by the Render Web Service, including the frontend,
+static assets, API routes, and streaming chat endpoint.
 
 #### Demo (No API Key)
 
@@ -147,7 +146,7 @@ python main.py analyze microsoft/vscode
 python main.py analyze facebook/react --depth deep
 
 # Get AI insights
-python main.py analyze vercel/next.js --insights
+python main.py analyze fastapi/fastapi --insights
 
 # Export report
 python main.py analyze rust-lang/rust --report html -o report.html

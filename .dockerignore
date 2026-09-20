@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+.venv
+venv
+__pycache__
+*.pyc
+.cache
+.streamlit
+config.json
+node_modules
+README.md
+AGENTS.md

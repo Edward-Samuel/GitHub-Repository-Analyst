@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RepoChat</title>
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">⌘</span><div><strong>RepoChat</strong><small>GitHub code assistant</small></div></div>
+      <label for="repository">Repository</label>
+      <div class="repo-row">
+        <input id="repository" placeholder="owner/repository" autocomplete="off">
+        <button id="load-button" title="Load repository">Load</button>
+      </div>
+      <p class="hint">The chatbot reads the README, manifests, repository tree, and source files fetched from GitHub.</p>
+      <div id="repo-card" class="repo-card hidden"></div>
+      <div class="sidebar-footer">Powered by GitHub API and Gemma</div>
+    </aside>
+    <section class="chat-panel">
+      <header class="chat-header">
+        <div><h1>Ask your repository</h1><p id="status">Load a repository to start chatting.</p></div>
+        <span class="status-dot"></span>
+      </header>
+      <div id="messages" class="messages">
+        <div class="welcome"><div class="welcome-icon">✦</div><h2>Understand any codebase</h2><p>Ask about architecture, a function, dependencies, bugs, or how to implement a feature.</p><div class="suggestions"><button>How is this project structured?</button><button>Where does authentication happen?</button><button>What are the main dependencies?</button></div></div>
+      </div>
+      <form id="chat-form" class="composer">
+        <textarea id="question" rows="1" placeholder="Ask a question about the repository..." disabled></textarea>
+        <button id="send-button" type="submit" disabled>➤</button>
+      </form>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

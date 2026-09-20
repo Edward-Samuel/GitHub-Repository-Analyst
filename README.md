@@ -98,14 +98,15 @@ repository's README, manifests, tree, and fetched source files.
 
 #### Render + Vercel
 
-Deploy the FastAPI backend on Render using the included `Dockerfile`:
+Deploy the FastAPI backend on Render using the included `render.yaml` Blueprint:
 
 ```text
-Build Command: docker build -t repochat-api .
+Build Command: pip install -r requirements.txt
 Start Command: uvicorn api:app --host 0.0.0.0 --port $PORT
 ```
 
-Set these backend environment variables in Render:
+In Render, choose **New + → Blueprint**, connect the repository, and select
+`render.yaml`. Add the secret values for these environment variables when prompted:
 
 ```text
 GEMINI_API_KEY=your_key

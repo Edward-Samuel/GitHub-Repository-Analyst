@@ -90,7 +90,7 @@ def get_repo_owner_repo(repo_input: str) -> tuple[str, str]:
             )
         owner, repo = path_parts
     else:
-        parts = value.split("/")
+        parts = value.rstrip("/").split("/")
         if len(parts) != 2:
             raise ValueError(
                 "Enter a full GitHub repository URL, such as "

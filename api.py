@@ -139,7 +139,8 @@ def chat_stream(request: ChatRequest) -> StreamingResponse:
                 question=request.question,
             ):
                 yield f"data: {json.dumps({'text': chunk})}\n\n"
-            yield "data: [DONE]\n\n"
+            # The stream closes naturally on completion. Do not send a literal
+            # [DONE] payload: some clients mistakenly try to parse it as JSON.
         except Exception as exc:
             yield f"data: {json.dumps({'error': str(exc)})}\n\n"
 

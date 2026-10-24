@@ -126,13 +126,20 @@ are present in the supplied context."""
 
         for index, model_name in enumerate(self.models):
             try:
-                response = requests.post(
-                    self._build_stream_url(model_name),
-                    params=params,
-                    json=payload,
-                    timeout=(30, 300),
-                    stream=True,
-                )
+                # Retry transient Google-side failures before switching models.
+                response = None
+                for attempt in range(2):
+                    response = requests.post(
+                        self._build_stream_url(model_name),
+                        params=params,
+                        json=payload,
+                        timeout=(30, 300),
+                        stream=True,
+                    )
+                    if response.status_code not in {500, 502, 503, 504} or attempt == 1:
+                        break
+                    response.close()
+                    time.sleep(2 ** attempt)
                 if response.status_code != 200:
                     error = f"Gemini API error {response.status_code}: {response.text}"
                     if index < len(self.models) - 1 and response.status_code in {
@@ -143,9 +150,24 @@ are present in the supplied context."""
                     raise Exception(error)
 
                 for line in response.iter_lines(decode_unicode=True):
-                    if not line or not line.startswith("data:"):
+                    if not line:
                         continue
-                    data = json.loads(line[5:].strip())
+                    # requests may return bytes when the response encoding is unset.
+                    if isinstance(line, bytes):
+                        line = line.decode("utf-8", errors="replace")
+                    line = line.strip()
+                    if not line.startswith("data:"):
+                        continue
+                    raw_payload = line[5:].strip()
+                    # This is the normal SSE terminator; it is not a JSON value.
+                    if raw_payload == "[DONE]":
+                        return
+                    try:
+                        data = json.loads(raw_payload)
+                    except json.JSONDecodeError as exc:
+                        raise RuntimeError(
+                            "Gemini returned an invalid streaming event payload."
+                        ) from exc
                     for candidate in data.get("candidates", []):
                         for part in candidate.get("content", {}).get("parts", []):
                             text = part.get("text")

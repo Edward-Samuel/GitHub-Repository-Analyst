@@ -176,13 +176,24 @@ form.addEventListener("submit", async event => {
       const result = await reader.read();
       done = result.done;
       buffer += decoder.decode(result.value || new Uint8Array(), {stream: !done});
-      const events = buffer.split("\n\n");
+      // SSE events may use LF or CRLF line endings.
+      const events = buffer.split(/\r?\n\r?\n/);
       buffer = events.pop() || "";
       for (const event of events) {
         const line = event.split("\n").find(item => item.startsWith("data:"));
         if (!line) continue;
-        const payload = JSON.parse(line.slice(5).trim());
-        if (payload === "[DONE]") continue;
+        const rawPayload = line.slice(5).trim();
+        // The SSE completion marker is plain text, not JSON.
+        if (rawPayload === "[DONE]") {
+          done = true;
+          break;
+        }
+        let payload;
+        try {
+          payload = JSON.parse(rawPayload);
+        } catch {
+          throw new Error("Received an invalid streaming response from the server.");
+        }
         if (payload.error) throw new Error(payload.error);
         answer += payload.text || "";
         assistantBubble.innerHTML = renderMarkdown(answer);

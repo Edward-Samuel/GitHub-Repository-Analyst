@@ -13,10 +13,10 @@
   <main class="shell">
     <aside class="sidebar">
       <div class="brand"><span class="brand-mark">⌘</span><div><strong>RepoChat</strong><small>GitHub code assistant</small></div></div>
-      <label for="repository">Repository</label>
+      <label for="repository">GitHub repository URL</label>
       <div class="repo-row">
-        <input id="repository" placeholder="owner/repository" autocomplete="off">
-        <button id="load-button" title="Load repository">Load</button>
+        <input id="repository" type="text" placeholder="https://github.com/owner/repository" autocomplete="url" autocapitalize="off" spellcheck="false" aria-label="Full GitHub repository URL">
+        <button id="load-button" title="Load GitHub repository">Load</button>
       </div>
       <p class="hint">The chatbot reads the README, manifests, repository tree, and source files fetched from GitHub.</p>
       <div id="repo-card" class="repo-card hidden"></div>

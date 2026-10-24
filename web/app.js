@@ -6,6 +6,10 @@ const form = document.querySelector("#chat-form");
 const messages = document.querySelector("#messages");
 const status = document.querySelector("#status");
 const repoCard = document.querySelector("#repo-card");
+const repoLoading = document.querySelector("#repo-loading");
+const repoLoadingLabel = document.querySelector("#repo-loading-label");
+const chatLoading = document.querySelector("#chat-loading");
+const chatLoadingLabel = document.querySelector("#chat-loading-label");
 let loadedRepository = "";
 
 function renderMarkdown(text) {
@@ -124,9 +128,16 @@ function addMessage(role, text, markdown = false) {
 
 async function loadRepo() {
   const value = repository.value.trim();
-  if (!value) return;
+  if (!value || loadButton.disabled) return;
+
   loadButton.disabled = true;
-  status.textContent = "Loading repository files...";
+  loadButton.textContent = "Loading…";
+  repository.disabled = true;
+  repoLoading.classList.remove("hidden");
+  repoLoading.setAttribute("aria-busy", "true");
+  repoLoadingLabel.textContent = "Fetching repository details, files, and README…";
+  status.textContent = "Loading repository…";
+
   try {
     const response = await fetch("/api/repository", {
       method: "POST", headers: {"Content-Type": "application/json"},
@@ -134,26 +145,53 @@ async function loadRepo() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Unable to load repository");
-    loadedRepository = value;
+
+    loadedRepository = data.repository.full_name || value;
     repoCard.classList.remove("hidden");
     repoCard.innerHTML = `<strong>${data.repository.full_name}</strong><span>${data.repository.description || "No description"}<br>${data.file_count.toLocaleString()} files · ${data.loaded_files.length} files loaded for chat</span>`;
     status.textContent = "Repository loaded. Ask a question.";
-    question.disabled = false; sendButton.disabled = false; question.focus();
+    question.disabled = false;
+    sendButton.disabled = false;
+    question.focus();
   } catch (error) {
-    status.textContent = error.message;
-  } finally { loadButton.disabled = false; }
+    status.textContent = error.message || "Unable to load repository. Please try again.";
+  } finally {
+    repoLoading.classList.add("hidden");
+    repoLoading.setAttribute("aria-busy", "false");
+    loadButton.disabled = false;
+    loadButton.textContent = "Load";
+    repository.disabled = false;
+  }
 }
 
 loadButton.addEventListener("click", loadRepo);
-repository.addEventListener("keydown", event => { if (event.key === "Enter") loadRepo(); });
+repository.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    loadRepo();
+  }
+});
 document.querySelectorAll(".suggestions button").forEach(button => button.addEventListener("click", () => {
   question.value = button.textContent; question.focus();
 }));
+question.addEventListener("keydown", event => {
+  if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && !event.isComposing) {
+    event.preventDefault();
+    if (!sendButton.disabled) form.requestSubmit(sendButton);
+  }
+});
+
 form.addEventListener("submit", async event => {
   event.preventDefault();
   const text = question.value.trim();
-  if (!text || !loadedRepository) return;
-  addMessage("user", text); question.value = ""; question.disabled = true; sendButton.disabled = true; status.textContent = "Thinking...";
+  if (!text || !loadedRepository || sendButton.disabled) return;
+  addMessage("user", text);
+  question.value = "";
+  question.disabled = true;
+  sendButton.disabled = true;
+  status.textContent = "Preparing your answer…";
+  chatLoadingLabel.textContent = "Contacting the AI service…";
+  chatLoading.classList.remove("hidden");
   let assistantBubble = null;
   let answer = "";
   try {
@@ -165,6 +203,7 @@ form.addEventListener("submit", async event => {
       const data = await response.json();
       throw new Error(data.detail || "Unable to answer");
     }
+    chatLoadingLabel.textContent = "Generating your answer…";
     assistantBubble = addMessage("assistant", "", true);
     if (!response.body) {
       throw new Error("Streaming is not supported by this browser.");
@@ -209,14 +248,19 @@ form.addEventListener("submit", async event => {
           throw new Error(payload.error);
         }
         if (payload && typeof payload === "object" && typeof payload.text === "string") {
-          answer += payload.text;
-          assistantBubble.innerHTML = renderMarkdown(answer);
-          messages.scrollTop = messages.scrollHeight;
+          if (payload.text) {
+            answer += payload.text;
+            chatLoading.classList.add("hidden");
+            assistantBubble.innerHTML = renderMarkdown(answer);
+            messages.scrollTop = messages.scrollHeight;
+          }
         }
       }
     }
+    chatLoading.classList.add("hidden");
     status.textContent = "Ready for another question.";
   } catch (error) {
+    chatLoading.classList.add("hidden");
     const rawMessage = error && error.message ? error.message : "An unexpected error occurred.";
     const temporaryFailure = /Gemini API error (500|502|503|504)|temporarily unavailable|\[DONE\].*not valid JSON/i.test(rawMessage);
     const friendlyMessage = temporaryFailure

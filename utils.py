@@ -58,14 +58,60 @@ def make_github_request(url: str, params: Optional[dict] = None) -> dict:
 
 
 def get_repo_owner_repo(repo_input: str) -> tuple[str, str]:
-    """Parse owner/repo from various input formats."""
-    if "/" in repo_input:
-        parts = repo_input.split("/", 1)
-        owner = parts[0].strip()
-        repo = parts[1].strip().rstrip("/")
-        if owner and repo and "/" not in repo:
-            return owner, repo
-    raise ValueError(f"Invalid repo format: '{repo_input}'. Use 'owner/repo'.")
+    """Parse a GitHub repository URL or owner/repo shorthand."""
+    from urllib.parse import urlparse
+
+    value = (repo_input or "").strip()
+    if not value:
+        raise ValueError(
+            "Enter a GitHub repository URL, for example "
+            "'https://github.com/owner/repository'."
+        )
+
+    # Support full URLs with or without a trailing slash, and plain
+    # github.com/owner/repository links copied without a scheme.
+    is_github_url = (
+        value.lower().startswith(("http://", "https://", "github.com/", "www.github.com/"))
+    )
+    if is_github_url:
+        candidate = value if "://" in value else f"https://{value}"
+        parsed = urlparse(candidate)
+        if parsed.scheme not in {"http", "https"} or parsed.hostname not in {
+            "github.com", "www.github.com"
+        }:
+            raise ValueError(
+                "Unsupported URL. Enter a repository link from https://github.com."
+            )
+        path_parts = [part for part in parsed.path.split("/") if part]
+        if len(path_parts) != 2:
+            raise ValueError(
+                "Use the repository's main URL, such as "
+                "'https://github.com/owner/repository' (not a file or branch link)."
+            )
+        owner, repo = path_parts
+    else:
+        parts = value.split("/")
+        if len(parts) != 2:
+            raise ValueError(
+                "Enter a full GitHub repository URL, such as "
+                "'https://github.com/owner/repository', or use 'owner/repository'."
+            )
+        owner, repo = (part.strip() for part in parts)
+
+    repo = repo[:-4] if repo.lower().endswith(".git") else repo
+    if (
+        not owner
+        or not repo
+        or any(char.isspace() for char in owner)
+        or any(char.isspace() for char in repo)
+        or owner in {".", ".."}
+        or repo in {".", ".."}
+    ):
+        raise ValueError(
+            "Invalid GitHub repository. Use 'https://github.com/owner/repository'."
+        )
+
+    return owner, repo
 
 
 def format_size(size_bytes: int) -> str:

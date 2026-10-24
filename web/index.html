@@ -18,6 +18,10 @@
         <input id="repository" type="text" placeholder="https://github.com/owner/repository" autocomplete="url" autocapitalize="off" spellcheck="false" aria-label="Full GitHub repository URL">
         <button id="load-button" title="Load GitHub repository">Load</button>
       </div>
+      <div id="repo-loading" class="loading-indicator hidden" role="status" aria-live="polite">
+        <span class="progress-track" aria-hidden="true"><span class="progress-bar"></span></span>
+        <span id="repo-loading-label">Loading repository from GitHub…</span>
+      </div>
       <p class="hint">The chatbot reads the README, manifests, repository tree, and source files fetched from GitHub.</p>
       <div id="repo-card" class="repo-card hidden"></div>
       <div class="sidebar-footer">Powered by GitHub API and Gemma</div>
@@ -30,9 +34,14 @@
       <div id="messages" class="messages">
         <div class="welcome"><div class="welcome-icon">✦</div><h2>Understand any codebase</h2><p>Ask about architecture, a function, dependencies, bugs, or how to implement a feature.</p><div class="suggestions"><button>How is this project structured?</button><button>Where does authentication happen?</button><button>What are the main dependencies?</button></div></div>
       </div>
+      <div id="chat-loading" class="chat-loading hidden" role="status" aria-live="polite">
+        <span class="typing-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span id="chat-loading-label">Preparing your answer…</span>
+        <span class="progress-track" aria-hidden="true"><span class="progress-bar"></span></span>
+      </div>
       <form id="chat-form" class="composer">
-        <textarea id="question" rows="1" placeholder="Ask a question about the repository..." disabled></textarea>
-        <button id="send-button" type="submit" disabled>➤</button>
+        <textarea id="question" rows="1" placeholder="Ask a question… (Ctrl + Enter to send)" aria-keyshortcuts="Control+Enter Meta+Enter" disabled></textarea>
+        <button id="send-button" type="submit" title="Send message (Ctrl + Enter)" aria-label="Send message" disabled>➤</button>
       </form>
     </section>
   </main>

@@ -179,14 +179,19 @@ form.addEventListener("submit", async event => {
       // SSE events may use LF or CRLF line endings.
       const events = buffer.split(/\r?\n\r?\n/);
       buffer = events.pop() || "";
+      // Process an unterminated final event when the connection closes.
+      if (done && buffer.trim()) {
+        events.push(buffer);
+        buffer = "";
+      }
       for (const event of events) {
-        const line = event.split("\n").find(item => item.startsWith("data:"));
-        if (!line) continue;
-        const rawPayload = line.slice(5).trim();
-        // The SSE completion marker is plain text, not JSON.
-        if (rawPayload === "[DONE]") {
-          done = true;
-          break;
+        const dataLines = event.split(/\r?\n/).filter(item => item.startsWith("data:"));
+        if (!dataLines.length) continue;
+        const rawPayload = dataLines.map(item => item.slice(5).trim()).join("\n").trim();
+        if (!rawPayload || rawPayload === "[DONE]" || rawPayload === '"[DONE]"') {
+          done = rawPayload.includes("[DONE]") || done;
+          if (done) break;
+          continue;
         }
         let payload;
         try {
@@ -194,10 +199,19 @@ form.addEventListener("submit", async event => {
         } catch {
           throw new Error("Received an invalid streaming response from the server.");
         }
-        if (payload.error) throw new Error(payload.error);
-        answer += payload.text || "";
-        assistantBubble.innerHTML = renderMarkdown(answer);
-        messages.scrollTop = messages.scrollHeight;
+        // Handle a JSON-quoted completion marker from proxies or compatible servers.
+        if (payload === "[DONE]") {
+          done = true;
+          break;
+        }
+        if (payload && typeof payload === "object" && payload.error) {
+          throw new Error(payload.error);
+        }
+        if (payload && typeof payload === "object" && typeof payload.text === "string") {
+          answer += payload.text;
+          assistantBubble.innerHTML = renderMarkdown(answer);
+          messages.scrollTop = messages.scrollHeight;
+        }
       }
     }
     status.textContent = "Ready for another question.";

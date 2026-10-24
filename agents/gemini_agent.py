@@ -176,6 +176,11 @@ User question: {question}"""
                         raise RuntimeError(
                             "Gemini returned an invalid streaming event payload."
                         ) from exc
+                    # Some compatible stream endpoints quote the completion marker.
+                    if data == "[DONE]":
+                        return
+                    if not isinstance(data, dict):
+                        continue
                     for candidate in data.get("candidates", []):
                         for part in candidate.get("content", {}).get("parts", []):
                             text = part.get("text")
@@ -354,18 +359,25 @@ Analysis:
 
     def answer_question(self, context: str, question: str) -> str:
         """Answer a specific question about a repository based on context."""
-        prompt = f"""You are a repository-aware coding assistant. Answer the user's question
-using only the repository context below. Cite relevant file paths when possible.
-If the context does not contain enough information, say so clearly instead of guessing.
+        prompt = f"""You are RepoChat, a friendly developer who explains code in plain English.
+Use the repository context below as your source of truth. Cite real paths when helpful,
+and say clearly when the context does not provide an answer.
+
+Match your response to the question. For greetings, reply briefly. For project-structure
+questions, make the answer easy for a newcomer to follow:
+1. Explain the project's purpose in 1-2 simple sentences.
+2. Show a small tree of only the key folders and files.
+3. Explain each item in everyday language, including why it matters.
+4. Describe the main flow in 3-5 steps if the context shows it.
+5. Suggest up to three files to read first, with a reason for each.
+For other questions, answer directly first. Briefly explain jargon, avoid huge directory
+dumps and unexplained acronyms, and do not guess about files or behavior. Use clear Markdown.
+Aim for about 250-450 words for architecture questions and less for simple questions.
 
 Repository context:
-
 {context[:50000]}
 
-User question: {question}
-
-Give a direct, practical answer. Include short code excerpts only when they are present
-in the supplied context."""
+User question: {question}"""
         return self._call(prompt)
 
     def compare_repositories(self, repo1_info: dict, repo1_analysis: str, repo2_info: dict, repo2_analysis: str) -> str:

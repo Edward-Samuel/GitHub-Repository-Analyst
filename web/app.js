@@ -154,6 +154,8 @@ form.addEventListener("submit", async event => {
   const text = question.value.trim();
   if (!text || !loadedRepository) return;
   addMessage("user", text); question.value = ""; question.disabled = true; sendButton.disabled = true; status.textContent = "Thinking...";
+  let assistantBubble = null;
+  let answer = "";
   try {
     const response = await fetch("/api/chat/stream", {
       method: "POST", headers: {"Content-Type": "application/json"},
@@ -163,14 +165,13 @@ form.addEventListener("submit", async event => {
       const data = await response.json();
       throw new Error(data.detail || "Unable to answer");
     }
-    const assistantBubble = addMessage("assistant", "", true);
+    assistantBubble = addMessage("assistant", "", true);
     if (!response.body) {
       throw new Error("Streaming is not supported by this browser.");
     }
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
-    let answer = "";
     let done = false;
     while (!done) {
       const result = await reader.read();
@@ -216,8 +217,20 @@ form.addEventListener("submit", async event => {
     }
     status.textContent = "Ready for another question.";
   } catch (error) {
-    addMessage("assistant", `I couldn't answer that: ${error.message}`);
-    status.textContent = "Request failed.";
+    const rawMessage = error && error.message ? error.message : "An unexpected error occurred.";
+    const temporaryFailure = /Gemini API error (500|502|503|504)|temporarily unavailable|\[DONE\].*not valid JSON/i.test(rawMessage);
+    const friendlyMessage = temporaryFailure
+      ? "The AI service ran into a temporary problem. Please try again in a moment."
+      : `I couldn't complete the answer: ${rawMessage}`;
+    const finalMessage = answer
+      ? `${answer}\n\n---\n\n**Response interrupted:** ${friendlyMessage}`
+      : friendlyMessage;
+    if (assistantBubble) {
+      assistantBubble.innerHTML = renderMarkdown(finalMessage);
+    } else {
+      addMessage("assistant", finalMessage, true);
+    }
+    status.textContent = "Couldn't complete the answer. You can try again.";
   }
   finally { question.disabled = false; sendButton.disabled = false; question.focus(); }
 });
